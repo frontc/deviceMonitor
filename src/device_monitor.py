@@ -125,19 +125,24 @@ class DeviceMonitor:
         """根据MAC地址获取设备名称"""
         return self.known_devices.get(mac, mac)
 
-    def send_bark_notification(self, title: str, body: str, mac: str = ''):
+    def send_bark_notification(self, title: str, body: str, mac: str = '', special_notification: bool = False):
         """
         通过Bark发送通知
         :param title: 通知标题
         :param body: 通知内容
         :param mac: 设备MAC地址，用于确定通知级别
+        :param special_notification: 是否为特殊通知（如初始报告），使用active级别
         """
         if not self.bark_api_key:
             logger.debug("Bark API Key未配置，跳过通知")
             return
         
-        # 根据设备MAC获取通知设置
-        notification_level = self.notification_settings.get(mac, 'normal')
+        # 如果是特殊通知（如初始报告），使用active级别
+        if special_notification:
+            notification_level = 'active'
+        else:
+            # 根据设备MAC获取通知设置
+            notification_level = self.notification_settings.get(mac, 'normal')
         
         # 构建URL（Bark API v2格式）
         # 格式: https://api.day.app/{key}/{title}/{body}?{params}
@@ -164,7 +169,7 @@ class DeviceMonitor:
             # 静默通知：无声音，无震动
             params['sound'] = 'silent'
             params['level'] = 'passive'
-        elif notification_level == 'vibrate':
+        elif notification_level == 'vibrate' or notification_level == 'active':
             # 震动通知：有声音，有震动
             params['level'] = 'active'
             # 可以指定声音类型，如'alarm', 'bell', 'electronic'等
@@ -228,25 +233,66 @@ class DeviceMonitor:
         else:
             logger.debug("无设备变化")
 
-    def run_once(self):
-        """执行一次完整的扫描和检测"""
+    def run_once(self, send_initial_report: bool = False):
+        """
+        执行一次完整的扫描和检测
+        :param send_initial_report: 是否发送初始设备报告（容器启动时使用）
+        """
         logger.info("开始设备扫描...")
         current_devices = self.arp_scan()
         
-        # 如果是第一次运行，只记录不发送通知
+        # 如果是第一次运行
         if not self.previous_devices:
             logger.info(f"首次扫描发现 {len(current_devices)} 个在线设备")
             self.previous_devices = current_devices.copy()
-            # 输出设备列表
+            
+            # 输出设备列表到日志
             for mac in sorted(current_devices):
                 device_name = self.get_device_name(mac)
                 logger.info(f"  - {device_name} ({mac})")
+            
+            # 如果要求发送初始报告，则通过Bark发送全量设备清单
+            if send_initial_report and current_devices:
+                self.send_initial_device_report(current_devices)
         else:
             self.detect_changes(current_devices)
         
         # 输出当前状态
         logger.info(f"当前在线设备: {len(current_devices)} 个")
         return current_devices
+    
+    def send_initial_device_report(self, devices: Set[str]):
+        """
+        发送初始设备报告（容器启动时调用）
+        :param devices: 当前在线设备集合
+        """
+        if not devices:
+            logger.info("无在线设备，不发送初始报告")
+            return
+        
+        if not self.bark_api_key:
+            logger.warning("Bark API Key未配置，无法发送初始报告")
+            return
+        
+        logger.info("发送初始设备报告...")
+        
+        # 构建设备清单
+        device_list = []
+        for mac in sorted(devices):
+            device_name = self.get_device_name(mac)
+            device_list.append(f"{device_name} ({mac})")
+        
+        device_count = len(devices)
+        device_summary = "\n".join(device_list)
+        
+        # 发送报告
+        title = "设备监控启动报告"
+        body = f"设备监控服务已启动\n\n当前在线设备 ({device_count} 个):\n{device_summary}\n\n扫描时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        
+        # 使用特殊通知级别"active"确保用户能看到
+        self.send_bark_notification(title, body, special_notification=True)
+        
+        logger.info(f"初始设备报告已发送，包含 {device_count} 个设备")
 
     def run_forever(self):
         """持续运行监控"""
@@ -279,13 +325,31 @@ def main():
         print("请编辑 config.json 文件并重新运行程序")
         return
     
-    # 创建监控器并运行
+    # 创建监控器
     monitor = DeviceMonitor()
     
-    # 检查是否以单次模式运行
-    if len(sys.argv) > 1 and sys.argv[1] == '--once':
-        monitor.run_once()
+    # 检查命令行参数
+    if len(sys.argv) > 1:
+        if sys.argv[1] == '--once':
+            # 单次扫描模式
+            monitor.run_once()
+        elif sys.argv[1] == '--init-report':
+            # 初始报告模式（容器启动时使用）
+            logger.info("运行初始报告模式...")
+            monitor.run_once(send_initial_report=True)
+        elif sys.argv[1] == '--help':
+            print("用法:")
+            print("  python src/device_monitor.py           # 持续监控模式")
+            print("  python src/device_monitor.py --once    # 单次扫描模式")
+            print("  python src/device_monitor.py --init-report  # 发送初始设备报告")
+            print("  python src/device_monitor.py --help    # 显示此帮助")
+        else:
+            print(f"未知参数: {sys.argv[1]}")
+            print("使用 --help 查看可用参数")
     else:
+        # 默认：持续监控模式，但先发送一次初始报告
+        logger.info("启动持续监控模式，发送初始设备报告...")
+        monitor.run_once(send_initial_report=True)
         monitor.run_forever()
 
 

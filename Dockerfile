@@ -29,4 +29,5 @@ ENV PYTHONUNBUFFERED=1
 ENV TZ=Asia/Shanghai
 
 # 设置容器启动命令
+# 默认启动时发送初始设备报告，然后进入持续监控模式
 CMD ["python", "src/device_monitor.py"]

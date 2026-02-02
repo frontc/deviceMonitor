@@ -82,9 +82,17 @@ brew install arp-scan
 # 单次扫描模式
 python src/device_monitor.py --once
 
-# 持续监控模式（默认）
+# 发送初始设备报告（容器启动时使用）
+python src/device_monitor.py --init-report
+
+# 持续监控模式（默认，会先发送初始报告）
 python src/device_monitor.py
+
+# 显示帮助
+python src/device_monitor.py --help
 ```
+
+**初始设备报告功能**：当容器启动时，会自动发送一次全量在网设备清单到你的iPhone，帮助你确认项目成功运行。
 
 #### 方式二：使用Docker
 
