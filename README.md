@@ -128,13 +128,26 @@ docker-compose down
 | `device_mapping` | 对象 | MAC地址到设备名的映射 | `{"AA:BB:CC:DD:EE:FF": "iPhone"}` |
 | `ignore_devices` | 数组 | 忽略的MAC地址列表 | `["FF:FF:FF:FF:FF:FF"]` |
 | `notification_settings` | 对象 | 设备通知级别设置 | `{"AA:BB:CC:DD:EE:FF": "vibrate"}` |
+| `notification_levels` | 对象 | 通知级别说明（文档用途） | 见示例 |
 
 ### 通知级别
 
-- `"vibrate"`：震动通知（重要设备）
-- `"silent"`：静默通知（不打扰）
-- `"normal"`：普通通知（默认）
-- 未配置的设备使用普通通知
+Bark API支持以下通知级别：
+
+| 级别 | 说明 | Bark API参数 |
+|------|------|-------------|
+| `"vibrate"` | 震动通知（有声音和震动） | `level=active` |
+| `"silent"` | 静默通知（无声音无震动） | `sound=silent`, `level=passive` |
+| `"normal"` | 普通通知（默认声音） | 不设置level参数，使用Bark默认行为 |
+| `"timeSensitive"` | 时效性通知（iOS 15+） | `level=timeSensitive` |
+
+**技术细节**：
+- `level=active`: 主动通知，有声音和震动
+- `level=passive`: 被动通知，无声音无震动，仅出现在通知中心
+- `level=timeSensitive`: 时效性通知，绕过静音和勿扰模式（iOS 15+）
+- `sound=silent`: 无声音通知，可与任意level组合
+
+未配置的设备使用普通通知（默认声音）。
 
 ## 部署到群晖NAS
 

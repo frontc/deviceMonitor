@@ -20,5 +20,11 @@
     "22:33:44:55:66:77": "normal",
     "33:44:55:66:77:88": "vibrate",
     "44:55:66:77:88:99": "silent"
+  },
+  "notification_levels": {
+    "vibrate": "有声音和震动的主动通知",
+    "silent": "无声音无震动的静默通知",
+    "normal": "默认声音的普通通知",
+    "timeSensitive": "时效性通知（iOS 15+）"
   }
 }

@@ -139,18 +139,52 @@ class DeviceMonitor:
         # 根据设备MAC获取通知设置
         notification_level = self.notification_settings.get(mac, 'normal')
         
-        # 构建URL
-        url = f"{self.bark_base_url}/{self.bark_api_key}/{title}/{body}"
+        # 构建URL（Bark API v2格式）
+        # 格式: https://api.day.app/{key}/{title}/{body}?{params}
+        url = f"{self.bark_base_url}/{self.bark_api_key}"
         
-        # 根据通知级别添加参数
+        # URL编码标题和内容
+        import urllib.parse
+        encoded_title = urllib.parse.quote(title)
+        encoded_body = urllib.parse.quote(body)
+        url = f"{url}/{encoded_title}/{encoded_body}"
+        
+        # 根据Bark API最新规范设置参数
+        # 参考：https://github.com/Finb/Bark/blob/master/Documents/API_V2.md
         params = {}
+        
+        # 通知级别设置（level参数）
+        # Bark API level参数说明：
+        # - active: 主动通知（有声音、有震动）
+        # - timeSensitive: 时效性通知（iOS 15+）
+        # - passive: 被动通知（无声音、无震动，仅通知中心）
+        # sound参数可以单独控制声音
+        
         if notification_level == 'silent':
+            # 静默通知：无声音，无震动
             params['sound'] = 'silent'
+            params['level'] = 'passive'
         elif notification_level == 'vibrate':
-            params['sound'] = 'alarm'
-            params['isArchive'] = '1'  # 重要通知，保留在历史记录
+            # 震动通知：有声音，有震动
+            params['level'] = 'active'
+            # 可以指定声音类型，如'alarm', 'bell', 'electronic'等
+            # params['sound'] = 'alarm'
+        elif notification_level == 'timeSensitive':
+            # 时效性通知（iOS 15+）
+            params['level'] = 'timeSensitive'
+        else:
+            # 普通通知：默认声音，被动级别
+            # 不设置level参数，使用Bark默认行为（有声音）
+            pass
+        
+        # 其他可选参数
+        # params['badge'] = 1  # 角标数量
+        # params['icon'] = 'https://example.com/icon.png'  # 图标
+        # params['group'] = 'device_monitor'  # 通知分组
+        # params['url'] = 'https://example.com'  # 点击跳转链接
         
         try:
+            # Bark API v2 支持GET和POST，使用GET更简单
             response = requests.get(url, params=params, timeout=10)
             if response.status_code == 200:
                 logger.info(f"Bark通知发送成功: {title}")
