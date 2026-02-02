@@ -1,7 +1,7 @@
 {
   "bark_api_key": "your_bark_api_key_here",
   "bark_base_url": "https://api.day.app",
-  "network_interface": "en0",
+  "network_interface": "eth0",
   "scan_interval": 60,
   "scan_subnets": [
     "192.168.1.0/24",

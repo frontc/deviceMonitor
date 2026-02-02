@@ -20,7 +20,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('device_monitor.log'),
+        logging.FileHandler('/var/log/device_monitor/device_monitor.log'),
         logging.StreamHandler()
     ]
 )
@@ -371,7 +371,7 @@ def create_example_config():
     example_config = {
         "bark_api_key": "your_bark_api_key_here",
         "bark_base_url": "https://api.day.app",
-        "network_interface": "en0",
+        "network_interface": "eth0",
         "scan_interval": 60,
         "device_mapping": {
             "AA:BB:CC:DD:EE:FF": "iPhone 12",
