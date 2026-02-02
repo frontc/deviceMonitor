@@ -123,7 +123,8 @@ class DeviceMonitor:
 
     def get_device_name(self, mac: str) -> str:
         """根据MAC地址获取设备名称"""
-        return self.known_devices.get(mac, mac)
+        # 如果配置了设备名称，则使用配置的名称，否则使用"未知设备"
+        return self.known_devices.get(mac, f"未知设备 ({mac})")
 
     def send_bark_notification(self, title: str, body: str, mac: str = '', special_notification: bool = False):
         """
