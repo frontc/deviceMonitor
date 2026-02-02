@@ -16,11 +16,17 @@ import sys
 import os
 
 # 配置日志
+import os
+log_dir = '/var/log/device_monitor'
+if not os.path.exists(log_dir):
+    # 如果目录不存在，使用当前目录
+    log_dir = '.'
+    
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/var/log/device_monitor/device_monitor.log'),
+        logging.FileHandler(os.path.join(log_dir, 'device_monitor.log')),
         logging.StreamHandler()
     ]
 )
@@ -71,44 +77,96 @@ class DeviceMonitor:
         支持多子网扫描，检测跨路由器的设备
         """
         mac_addresses = set()
+        subnet_device_counts = {}
         
-        # 对每个子网进行扫描
-        for subnet in self.scan_subnets:
-            try:
-                logger.debug(f"扫描子网: {subnet}")
-                # 方法1: 使用arp-scan（推荐，更准确）
-                cmd = ['arp-scan', subnet, '--interface', self.network_interface]
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-                
-                if result.returncode == 0:
-                    # 解析arp-scan输出，提取MAC地址
-                    lines = result.stdout.split('\n')
-                    for line in lines:
-                        # 匹配MAC地址格式（如 00:11:22:33:44:55）
-                        mac_match = re.search(r'([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})', line)
-                        if mac_match:
-                            mac = mac_match.group(0).upper().replace('-', ':')
-                            mac_addresses.add(mac)
-                    logger.debug(f"子网 {subnet} 发现 {len(mac_addresses)} 个设备")
-                else:
-                    logger.warning(f"子网 {subnet} arp-scan 失败")
-            except FileNotFoundError:
-                logger.warning("arp-scan 未安装，尝试使用备选方法")
-                break  # 如果arp-scan未安装，跳出循环使用备选方法
-            except subprocess.TimeoutExpired:
-                logger.error(f"子网 {subnet} ARP扫描超时")
-            except Exception as e:
-                logger.error(f"子网 {subnet} 扫描异常: {e}")
+        # 检查arp-scan是否安装
+        arp_scan_installed = self._check_arp_scan_installed()
         
-        # 如果arp-scan未安装或所有子网扫描失败，使用备选方法
-        if not mac_addresses:
-            logger.info("使用备选ARP扫描方法")
+        if not arp_scan_installed:
+            logger.warning("arp-scan未安装，只能扫描本地子网")
+            logger.info("建议在Dockerfile中安装arp-scan以获得完整的多子网扫描功能")
             self._fallback_arp_scan(mac_addresses)
+        else:
+            # 对每个子网进行扫描（arp-scan已安装）
+            for subnet in self.scan_subnets:
+                try:
+                    logger.info(f"开始扫描子网: {subnet}")
+                    subnet_macs = set()
+                    
+                    # 使用arp-scan扫描
+                    cmd = ['arp-scan', subnet, '--interface', self.network_interface, '--retry=3', '--timeout=5000']
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    
+                    if result.returncode == 0:
+                        # 解析arp-scan输出，提取MAC地址
+                        lines = result.stdout.split('\n')
+                        device_count = 0
+                        for line in lines:
+                            # 匹配MAC地址格式（如 00:11:22:33:44:55）
+                            mac_match = re.search(r'([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})', line)
+                            if mac_match:
+                                mac = mac_match.group(0).upper().replace('-', ':')
+                                subnet_macs.add(mac)
+                                device_count += 1
+                        
+                        # 记录子网扫描结果
+                        subnet_device_counts[subnet] = len(subnet_macs)
+                        mac_addresses.update(subnet_macs)
+                        logger.info(f"子网 {subnet} 发现 {len(subnet_macs)} 个设备")
+                        
+                        # 输出详细设备信息
+                        if subnet_macs:
+                            logger.debug(f"子网 {subnet} 设备列表:")
+                            for mac in sorted(subnet_macs):
+                                logger.debug(f"  - {mac}")
+                    else:
+                        logger.warning(f"子网 {subnet} arp-scan 失败，返回码: {result.returncode}")
+                        if result.stderr:
+                            logger.warning(f"错误信息: {result.stderr[:200]}")
+                        
+                except subprocess.TimeoutExpired:
+                    logger.error(f"子网 {subnet} ARP扫描超时")
+                except Exception as e:
+                    logger.error(f"子网 {subnet} 扫描异常: {e}")
+        
+        # 输出扫描统计
+        total_devices = len(mac_addresses)
+        logger.info(f"扫描统计: 总共发现 {total_devices} 个设备")
+        for subnet, count in subnet_device_counts.items():
+            logger.info(f"  - {subnet}: {count} 个设备")
+        
+        # 如果没有任何设备被发现，尝试系统ARP表作为最后手段
+        if total_devices == 0:
+            logger.warning("arp-scan未发现任何设备，尝试系统ARP表")
+            self._fallback_arp_scan(mac_addresses)
+            total_devices = len(mac_addresses)
         
         # 过滤掉忽略的设备
         filtered_macs = {mac for mac in mac_addresses if mac not in self.ignore_devices}
-        logger.info(f"扫描完成，发现 {len(filtered_macs)} 个设备（过滤后）")
+        logger.info(f"扫描完成，发现 {len(filtered_macs)} 个设备（过滤忽略设备后）")
+        
+        # 输出发现的设备列表
+        if filtered_macs:
+            logger.info("发现的设备列表:")
+            for mac in sorted(filtered_macs):
+                device_name = self.get_device_name(mac)
+                logger.info(f"  - {device_name}")
+        else:
+            logger.warning("未发现任何设备，请检查:")
+            logger.warning("  1. 网络接口配置是否正确")
+            logger.warning("  2. 子网配置是否正确")
+            logger.warning("  3. 是否有网络访问权限")
+            logger.warning("  4. 路由器是否允许ARP扫描")
+        
         return filtered_macs
+    
+    def _check_arp_scan_installed(self) -> bool:
+        """检查arp-scan是否安装"""
+        try:
+            result = subprocess.run(['which', 'arp-scan'], capture_output=True, text=True)
+            return result.returncode == 0
+        except Exception:
+            return False
 
     def _fallback_arp_scan(self, mac_addresses: Set[str]):
         """备选ARP扫描方法（使用系统arp表）"""
@@ -125,13 +183,58 @@ class DeviceMonitor:
                     if mac_match:
                         mac = mac_match.group(0).upper().replace('-', ':')
                         mac_addresses.add(mac)
-                logger.debug(f"系统ARP表发现 {len(mac_addresses)} 个设备")
+                logger.info(f"系统ARP表发现 {len(mac_addresses)} 个设备")
+                
+                # 输出发现的设备
+                if mac_addresses:
+                    logger.info("系统ARP表发现的设备:")
+                    for mac in sorted(mac_addresses):
+                        logger.info(f"  - {mac}")
                 
                 # 备选方法只能扫描本地子网，记录警告
                 if len(self.scan_subnets) > 1:
                     logger.warning("备选ARP扫描只能检测本地子网，无法扫描配置的多个子网。请安装arp-scan以获得完整功能。")
         except Exception as e:
             logger.error(f"备选ARP扫描失败: {e}")
+    
+    def _icmp_ping_scan(self, subnet: str, mac_addresses: Set[str]):
+        """
+        ICMP Ping扫描作为备选方案
+        注意：Ping扫描只能发现IP，无法直接获取MAC地址
+        """
+        try:
+            logger.debug(f"尝试ICMP Ping扫描子网: {subnet}")
+            # 这里可以添加ping扫描逻辑
+            # 由于需要获取MAC地址，ping扫描效果有限
+            # 暂时只记录日志
+            logger.info(f"ICMP Ping扫描子网 {subnet} (功能待实现)")
+        except Exception as e:
+            logger.error(f"ICMP Ping扫描失败: {e}")
+    
+    def _comprehensive_scan(self, mac_addresses: Set[str]):
+        """
+        综合扫描方法，当所有其他方法都失败时使用
+        """
+        logger.info("执行综合扫描...")
+        
+        # 尝试多种方法
+        methods = [
+            self._fallback_arp_scan,
+            # 可以添加更多扫描方法
+        ]
+        
+        for method in methods:
+            try:
+                original_count = len(mac_addresses)
+                method(mac_addresses)
+                new_count = len(mac_addresses)
+                if new_count > original_count:
+                    logger.info(f"方法 {method.__name__} 发现了 {new_count - original_count} 个新设备")
+            except Exception as e:
+                logger.error(f"综合扫描方法 {method.__name__} 失败: {e}")
+        
+        if not mac_addresses:
+            logger.error("所有扫描方法都未能发现设备，请检查网络配置和权限")
 
     def get_device_name(self, mac: str) -> str:
         """根据MAC地址获取设备名称"""

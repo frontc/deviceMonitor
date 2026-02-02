@@ -1,0 +1,25 @@
+2026-02-02 16:54:57,026 - device_monitor - INFO - 配置文件加载成功: config.json
+2026-02-02 16:54:57,026 - device_monitor - INFO - 设备监控初始化完成，已知设备 5 个，忽略设备 2 个，扫描子网 2 个
+2026-02-02 16:54:57,048 - device_monitor - WARNING - arp-scan未安装，只能扫描本地子网
+2026-02-02 16:54:57,048 - device_monitor - INFO - 建议在Dockerfile中安装arp-scan以获得完整的多子网扫描功能
+2026-02-02 16:54:57,068 - device_monitor - INFO - 系统ARP表发现 8 个设备
+2026-02-02 16:54:57,068 - device_monitor - INFO - 系统ARP表发现的设备:
+2026-02-02 16:54:57,068 - device_monitor - INFO -   - 2C:CA:16:25:5E:63
+2026-02-02 16:54:57,068 - device_monitor - INFO -   - 30:FD:65:21:98:35
+2026-02-02 16:54:57,068 - device_monitor - INFO -   - 3C:E9:F7:50:2D:E1
+2026-02-02 16:54:57,068 - device_monitor - INFO -   - 76:A6:CD:EA:93:66
+2026-02-02 16:54:57,068 - device_monitor - INFO -   - 76:A6:CD:EA:93:67
+2026-02-02 16:54:57,068 - device_monitor - INFO -   - 92:64:5B:E3:16:9A
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - CC:4D:75:68:3F:83
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - FF:FF:FF:FF:FF:FF
+2026-02-02 16:54:57,069 - device_monitor - WARNING - 备选ARP扫描只能检测本地子网，无法扫描配置的多个子网。请安装arp-scan以获得完整功能。
+2026-02-02 16:54:57,069 - device_monitor - INFO - 扫描统计: 总共发现 8 个设备
+2026-02-02 16:54:57,069 - device_monitor - INFO - 扫描完成，发现 7 个设备（过滤忽略设备后）
+2026-02-02 16:54:57,069 - device_monitor - INFO - 发现的设备列表:
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - 未知设备 (2C:CA:16:25:5E:63)
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - 未知设备 (30:FD:65:21:98:35)
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - 未知设备 (3C:E9:F7:50:2D:E1)
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - 未知设备 (76:A6:CD:EA:93:66)
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - 未知设备 (76:A6:CD:EA:93:67)
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - 未知设备 (92:64:5B:E3:16:9A)
+2026-02-02 16:54:57,069 - device_monitor - INFO -   - 未知设备 (CC:4D:75:68:3F:83)
