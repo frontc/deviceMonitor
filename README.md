@@ -133,6 +133,7 @@ docker-compose down
 | `bark_base_url` | 字符串 | Bark服务器地址 | `"https://api.day.app"` |
 | `network_interface` | 字符串 | 网络接口名称 | `"en0"`, `"eth0"` |
 | `scan_interval` | 整数 | 扫描间隔（秒） | `60` |
+| `scan_subnets` | 数组 | 要扫描的子网列表（支持多子网） | `["192.168.1.0/24", "192.168.0.0/24"]` |
 | `device_mapping` | 对象 | MAC地址到设备名的映射 | `{"AA:BB:CC:DD:EE:FF": "iPhone"}` |
 | `ignore_devices` | 数组 | 忽略的MAC地址列表 | `["FF:FF:FF:FF:FF:FF"]` |
 | `notification_settings` | 对象 | 设备通知级别设置 | `{"AA:BB:CC:DD:EE:FF": "vibrate"}` |
@@ -157,6 +158,24 @@ Bark API支持以下通知级别：
 - `sound=silent`: 无声音通知，可与任意level组合
 
 未配置的设备使用普通通知（默认声音）。
+
+### 多子网扫描配置
+
+对于复杂的网络环境（如多级路由器），可以配置多个子网进行扫描：
+
+```json
+"scan_subnets": [
+  "192.168.1.0/24",  // 一级路由器子网
+  "192.168.0.0/24",  // 二级路由器子网
+  "192.168.2.0/24"   // 其他子网
+]
+```
+
+**注意事项**：
+1. 多子网扫描需要安装`arp-scan`工具
+2. 备选ARP扫描方法（系统arp表）只能扫描本地子网
+3. 确保NAS有路由路径可以到达其他子网
+4. 扫描时间会随子网数量增加而增加
 
 ## 部署到群晖NAS
 

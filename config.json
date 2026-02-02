@@ -3,6 +3,10 @@
   "bark_base_url": "https://api.day.app",
   "network_interface": "en0",
   "scan_interval": 60,
+  "scan_subnets": [
+    "192.168.1.0/24",
+    "192.168.0.0/24"
+  ],
   "device_mapping": {
     "AA:BB:CC:DD:EE:FF": "iPhone 12",
     "11:22:33:44:55:66": "MacBook Pro",
