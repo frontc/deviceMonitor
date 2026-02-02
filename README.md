@@ -65,12 +65,12 @@ brew install arp-scan
 }
 ```
 
-2. **获取Bark API Key**：
+1. **获取Bark API Key**：
    - 在iPhone上安装Bark App
    - 打开App获取你的设备Key
    - 将Key填入配置文件的`bark_api_key`字段
 
-3. **确定网络接口**：
+2. **确定网络接口**：
    - Linux/macOS: 运行 `ifconfig` 或 `ip addr` 查看接口名称
    - 常见接口：`eth0`（有线）、`wlan0`（无线）、`en0`（macOS）
 
@@ -120,7 +120,7 @@ docker-compose down
 ### 主要配置项
 
 | 配置项 | 类型 | 说明 | 示例 |
-|--------|------|------|------|
+| --------- | -------- | -------- | -------- |
 | `bark_api_key` | 字符串 | Bark API密钥 | `"abcd1234"` |
 | `bark_base_url` | 字符串 | Bark服务器地址 | `"https://api.day.app"` |
 | `network_interface` | 字符串 | 网络接口名称 | `"en0"`, `"eth0"` |
@@ -135,13 +135,14 @@ docker-compose down
 Bark API支持以下通知级别：
 
 | 级别 | 说明 | Bark API参数 |
-|------|------|-------------|
+| -------- | -------- | -------- |
 | `"vibrate"` | 震动通知（有声音和震动） | `level=active` |
 | `"silent"` | 静默通知（无声音无震动） | `sound=silent`, `level=passive` |
 | `"normal"` | 普通通知（默认声音） | 不设置level参数，使用Bark默认行为 |
 | `"timeSensitive"` | 时效性通知（iOS 15+） | `level=timeSensitive` |
 
 **技术细节**：
+
 - `level=active`: 主动通知，有声音和震动
 - `level=passive`: 被动通知，无声音无震动，仅出现在通知中心
 - `level=timeSensitive`: 时效性通知，绕过静音和勿扰模式（iOS 15+）
@@ -237,7 +238,7 @@ docker-compose logs -f
 
 ## 项目结构
 
-```
+```sh
 deviceMonitor/
 ├── src/
 │   └── device_monitor.py    # 主程序
@@ -280,6 +281,7 @@ MIT License
 ## 支持
 
 如有问题，请：
+
 1. 查看本文档的故障排除部分
 2. 检查日志文件
 3. 提交GitHub Issue
