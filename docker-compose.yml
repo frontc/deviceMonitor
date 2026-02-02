@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  device-monitor:
+    build: .
+    container_name: device-monitor
+    restart: unless-stopped
+    network_mode: host  # 使用主机网络模式以便访问局域网
+    volumes:
+      # 挂载配置文件，方便修改
+      - ./config.json:/app/config.json:ro
+      # 挂载日志文件
+      - ./logs:/var/log/device_monitor
+    environment:
+      - TZ=Asia/Shanghai
+    # 设置容器特权模式，以便访问网络接口（某些系统需要）
+    privileged: true
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; print('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

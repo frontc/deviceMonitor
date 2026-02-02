@@ -1,0 +1,24 @@
+{
+  "bark_api_key": "your_bark_api_key_here",
+  "bark_base_url": "https://api.day.app",
+  "network_interface": "en0",
+  "scan_interval": 60,
+  "device_mapping": {
+    "AA:BB:CC:DD:EE:FF": "iPhone 12",
+    "11:22:33:44:55:66": "MacBook Pro",
+    "22:33:44:55:66:77": "iPad",
+    "33:44:55:66:77:88": "Android Phone",
+    "44:55:66:77:88:99": "Smart TV"
+  },
+  "ignore_devices": [
+    "FF:FF:FF:FF:FF:FF",
+    "00:00:00:00:00:00"
+  ],
+  "notification_settings": {
+    "AA:BB:CC:DD:EE:FF": "vibrate",
+    "11:22:33:44:55:66": "silent",
+    "22:33:44:55:66:77": "normal",
+    "33:44:55:66:77:88": "vibrate",
+    "44:55:66:77:88:99": "silent"
+  }
+}
